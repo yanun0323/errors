@@ -372,7 +372,7 @@ func canSkip(f runtime.Frame) bool {
 		return true
 	}
 
-	if strings.Contains(f.File, "libexec/src/runtime") {
+	if strings.Contains(f.File, "/src/runtime/") {
 		return true
 	}
 
