@@ -19,6 +19,10 @@ A lightweight Go errors package with stack tracing and structured fields.
 go get github.com/yanun0323/errors
 ```
 
+## Requirements
+
+- Go 1.18+
+
 ## Quick Start
 
 ```go
