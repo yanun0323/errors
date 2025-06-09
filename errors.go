@@ -99,19 +99,7 @@ func (e *errorStack) With(args ...any) Error {
 
 	attrs := make([]attr, 0, len(e.attr)+len(args)/2)
 	attrs = append(attrs, e.attr...)
-	for i := 0; i < len(args); i += 2 {
-		k, ok := args[i].(string)
-		if !ok {
-			break
-		}
-
-		attrs = append(attrs, attr{
-			Function: e.lastCaller.Function,
-			Key:      k,
-			Value:    args[i+1],
-		})
-
-	}
+	attrs = append(attrs, makeArgs(e.lastCaller.Function, args...)...)
 
 	return &errorStack{
 		message:    e.message,

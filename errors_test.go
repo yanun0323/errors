@@ -10,58 +10,171 @@ import (
 	"github.com/yanun0323/errors/internal/colorize"
 )
 
+var errCause = New("root")
+
 func TestNew(t *testing.T) {
-	err := New("test error").(*errorStack)
+	err := New("test error").With("k1", "v1").With("k2", 2).(*errorStack)
 	if err == nil {
 		t.Fatal("Expected error, got nil")
 	}
 
-	if err.Error() != "test error" {
-		t.Errorf("Expected 'test error', got '%s'", err.Error())
-	}
+	expected := `
+[error] test error
+[cause] test error
+[field]
+    [TestNew] 
+        [k1] v1
+        [k2] 2
+[stack]
+    [TestNew] /Users/Shared/Project/personal/go/errors/errors_test.go:16
+`
 
-	if len(err.stack) == 0 {
-		t.Error("Expected stack trace, got none")
+	f := FormatColorized(err)
+	f = colorize.ResetString(f)
+	if !strings.EqualFold(f, expected) {
+		t.Errorf("Expected colorized output '%s', but got '%s'", expected, f)
 	}
 }
 
 func TestErrorfBasic(t *testing.T) {
-	err := Errorf("formatted error %d", 123)
-	expected := "formatted error 123"
-	if err.Error() != expected {
-		t.Errorf("Expected '%s', got '%s'", expected, err.Error())
+	err := Errorf("formatted error %d", 123).With(
+		"k1", "v1",
+	).With(
+		"k2", 2,
+		"k3", 3,
+	).(*errorStack)
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+
+	expected := `
+[error] formatted error 123
+[cause] formatted error 123
+[field]
+    [TestErrorfBasic] 
+        [k1] v1
+        [k2] 2
+        [k3] 3
+[stack]
+    [TestErrorfBasic] /Users/Shared/Project/personal/go/errors/errors_test.go:40
+`
+
+	f := FormatColorized(err)
+	f = colorize.ResetString(f)
+	if !strings.EqualFold(f, expected) {
+		t.Errorf("Expected colorized output '%s', but got '%s'", expected, f)
 	}
 }
 
-func TestErrorfWithWrappedError(t *testing.T) {
-	err := Errorf("formatted error, err: %w", New("wrapped error").With("user_id", 123)).(*errorStack)
-	expected := "formatted error, err: wrapped error"
-	if err.Error() != expected {
-		t.Errorf("Expected '%s', got '%s'", expected, err.Error())
+func causeError() error {
+	return Wrap(errCause).With("r1", "rv1").With("r2", 22)
+}
+
+func TestErrorfWrap(t *testing.T) {
+	err := Errorf("formatted error, err: %w", causeError()).
+		With("user_id", 123).
+		With(
+			"k1", "v1",
+			"k2", 2,
+		).(*errorStack)
+	if err == nil {
+		t.Fatal("Expected error, got nil")
 	}
 
-	if len(err.attr) != 1 {
-		t.Fatalf("Expected 1 attribute, got %d", len(err.attr))
-	}
+	expected := `
+[error] formatted error, err: root
+[cause] root
+[field]
+    [causeError] 
+        [r1] rv1
+        [r2] 22
+    [TestErrorfWrap] 
+        [user_id] 123
+        [k1] v1
+        [k2] 2
+[stack]
+    [causeError] /Users/Shared/Project/personal/go/errors/errors_test.go:70
+    [TestErrorfWrap] /Users/Shared/Project/personal/go/errors/errors_test.go:74
+`
 
-	if err.attr[0] != (attr{"TestErrorfWithWrappedError", "user_id", 123}) {
-		t.Errorf("Expected user_id=123, got %v", err.attr[0])
+	f := FormatColorized(err)
+	f = colorize.ResetString(f)
+	if !strings.EqualFold(f, expected) {
+		t.Errorf("Expected colorized output '%s', but got '%s'", expected, f)
 	}
 }
 
-func TestErrorfWithWrapping(t *testing.T) {
-	baseErr := New("base error")
-	wrappedErr := Wrap(baseErr, "wrapped")
+func TestWrap(t *testing.T) {
+	wrappedErr := Wrap(causeError(), "wrapped").With(
+		"k1", "v1",
+		"k2", 2,
+	).With(
+		"k3", 3,
+	)
 
-	if unwrapped := Unwrap(wrappedErr); !Is(unwrapped, baseErr) {
+	if unwrapped := Unwrap(wrappedErr); !Is(unwrapped, errCause) {
 		t.Error("Unwrap failed")
 		t.Errorf("unwrapped: %+v", Unwrap(unwrapped))
-		t.Errorf("baseErr: %+v", Unwrap(baseErr))
+		t.Errorf("baseErr: %+v", Unwrap(errCause))
 	}
 
-	expected := "wrapped, err: base error"
-	if wrappedErr.Error() != expected {
-		t.Errorf("Expected '%s', got '%s'", expected, wrappedErr.Error())
+	expected := `
+[error] wrapped, err: root
+[cause] root
+[field]
+    [causeError] 
+        [r1] rv1
+        [r2] 22
+    [TestWrap] 
+        [k1] v1
+        [k2] 2
+        [k3] 3
+[stack]
+    [causeError] /Users/Shared/Project/personal/go/errors/errors_test.go:70
+    [TestWrap] /Users/Shared/Project/personal/go/errors/errors_test.go:108
+`
+
+	f := FormatColorized(wrappedErr)
+	f = colorize.ResetString(f)
+	if !strings.EqualFold(f, expected) {
+		t.Errorf("Expected colorized output '%s', but got '%s'", expected, f)
+	}
+}
+
+func TestWrapf(t *testing.T) {
+	wrappedErr := Wrapf(causeError(), "wrapped %s", "world").With(
+		"k1", "v1",
+		"k2", 2,
+	).With(
+		"k3", 3,
+	)
+
+	if unwrapped := Unwrap(wrappedErr); !Is(unwrapped, errCause) {
+		t.Error("Unwrap failed")
+		t.Errorf("unwrapped: %+v", Unwrap(unwrapped))
+		t.Errorf("baseErr: %+v", Unwrap(errCause))
+	}
+
+	expected := `
+[error] wrapped world, err: root
+[cause] root
+[field]
+    [causeError] 
+        [r1] rv1
+        [r2] 22
+    [TestWrapf] 
+        [k1] v1
+        [k2] 2
+        [k3] 3
+[stack]
+    [causeError] /Users/Shared/Project/personal/go/errors/errors_test.go:70
+    [TestWrapf] /Users/Shared/Project/personal/go/errors/errors_test.go:145
+`
+
+	f := FormatColorized(wrappedErr)
+	f = colorize.ResetString(f)
+	if !strings.EqualFold(f, expected) {
+		t.Errorf("Expected colorized output '%s', but got '%s'", expected, f)
 	}
 }
 
@@ -313,7 +426,7 @@ field:
         key: value
 stack:
     TestFormat:
-        /Users/Shared/Project/personal/go/errors/errors_test.go:303 in TestFormat
+        /Users/Shared/Project/personal/go/errors/errors_test.go:416 in TestFormat
 `
 
 	if formatted != expected {
@@ -353,7 +466,7 @@ func TestFormatJson(t *testing.T) {
     {
       "file": "/Users/Shared/Project/personal/go/errors/errors_test.go",
       "function": "TestFormatJson",
-      "line": "327"
+      "line": "440"
     }
   ]
 }`
@@ -380,7 +493,7 @@ func TestFormatColorized(t *testing.T) {
         [email] user@example.com
         [attempt] 3
 [stack]
-    [TestFormatColorized] /Users/Shared/Project/personal/go/errors/errors_test.go:369
+    [TestFormatColorized] /Users/Shared/Project/personal/go/errors/errors_test.go:482
 `
 
 	f := FormatColorized(err)

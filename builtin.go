@@ -3,7 +3,6 @@ package errors
 import (
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 )
 
@@ -50,7 +49,7 @@ func (e errorString) Error() string {
 
 // New creates a new error with stack trace
 func New(text string) Error {
-	return newError(text)
+	return newError(text, 1)
 }
 
 // Wrap wraps an error and formats using the default formats for its operands and returns the resulting string. Spaces are added between operands when neither is a string.
@@ -66,7 +65,7 @@ func Wrap(err error, args ...any) Error {
 		message = fmt.Sprint(args...)
 	}
 
-	return wrap(err, message)
+	return wrap(err, message, 1, false)
 }
 
 // Wrapf wraps an error and formats according to a format specifier and returns the resulting string.
@@ -78,16 +77,20 @@ func Wrap(err error, args ...any) Error {
 //	errors.Errorf("%w", err)
 func Wrapf(err error, format string, args ...any) Error {
 	if len(args) != 0 {
-		return wrap(err, fmt.Sprintf(format, args...))
+		return wrap(err, fmt.Sprintf(format, args...), 1, false)
 	}
 
-	return wrap(err, format)
+	return wrap(err, format, 1, false)
 }
 
 // Errorf creates a formatted error, supporting '%w' verb for error wrapping
 func Errorf(format string, args ...any) Error {
+	return errorf(NewTemplate(), format, args...)
+}
+
+func errorf(template Template, format string, args ...any) Error {
 	if len(args) == 0 {
-		return newError(format)
+		return newError(format, 2, template)
 	}
 
 	// Check if args contains error types and format string contains %w
@@ -104,21 +107,26 @@ func Errorf(format string, args ...any) Error {
 			format = newFormat
 
 			if err == nil {
-				return newError(fmt.Sprintf(format, args...))
+				return newError(fmt.Sprintf(format, args...), 2, template)
 			} else {
-				return wrap(err, fmt.Sprintf(format, args...), true)
+				return wrap(err, fmt.Sprintf(format, args...), 2, true, template)
 			}
 		}
 	}
 
-	return newError(fmt.Sprintf(format, args...))
+	return newError(fmt.Sprintf(format, args...), 2, template)
 }
 
-func newError(text string) Error {
-	stack := getStack(1)
+func newError(text string, ignoreCallStackCount int, tp ...Template) Error {
+	stack := getStack(ignoreCallStackCount)
 	lastCaller := frame{}
 	if len(stack) != 0 {
 		lastCaller = stack[0]
+	}
+
+	template := NewTemplate()
+	if len(tp) != 0 {
+		template = tp[0]
 	}
 
 	return &errorStack{
@@ -126,11 +134,11 @@ func newError(text string) Error {
 		cause:      errorString{message: text},
 		lastCaller: lastCaller,
 		stack:      stack,
-		attr:       []attr{},
+		attr:       template.Attrs(lastCaller),
 	}
 }
 
-func wrap(err error, message string, ignoreErrorMessage ...bool) Error {
+func wrap(err error, message string, ignoreCallStackCount int, combineStack bool, tp ...Template) Error {
 	if err == nil {
 		return nil
 	}
@@ -138,14 +146,21 @@ func wrap(err error, message string, ignoreErrorMessage ...bool) Error {
 	var (
 		msg        string
 		attrs      []attr
+		tempAttrs  []attr
 		lastCaller frame
 		cause      = err
-		stack      = getStack(1)
-		ignore     = len(ignoreErrorMessage) != 0 && ignoreErrorMessage[0]
+		stack      = getStack(ignoreCallStackCount)
+		ignore     = combineStack
+		template   = NewTemplate()
 	)
 
 	if len(stack) != 0 {
 		lastCaller = stack[0]
+	}
+
+	if len(tp) != 0 {
+		template = tp[0]
+		tempAttrs = template.Attrs(lastCaller)
 	}
 
 	if message == "" {
@@ -160,11 +175,15 @@ func wrap(err error, message string, ignoreErrorMessage ...bool) Error {
 
 	if err, ok := err.(*errorStack); ok {
 		cause = err.cause
-		attrs = slices.Clone(err.attr)
+		attrs = make([]attr, 0, len(err.attr)+len(tempAttrs))
+		attrs = append(attrs, err.attr...)
+
 		if len(err.stack) > len(stack) {
 			stack = err.stack[:]
 		}
 	}
+
+	attrs = append(attrs, tempAttrs...)
 
 	return &errorStack{
 		message:    msg,
