@@ -10,6 +10,7 @@ A lightweight Go errors package with stack tracing and structured fields.
 - 🎨 **Multiple formats**: Text, JSON, and colorized output
 - 🔗 **Error wrapping**: Full support for `%w` verb and error chains
 - ⚡ **High performance**: Efficient implementation with object pooling
+- 🔌 **Logs integration**: Native support for [github.com/yanun0323/logs](https://github.com/yanun0323/logs) package
 
 > ⚠️ **Caution**: using `fmt.Errorf` to wrap errors is not compatible with `errors.Is` and `errors.As` methods.
 
@@ -105,6 +106,22 @@ errors.FormatColorized(err error) string    // Colorized text with stack trace
 errors.FormatJson(err error) string         // JSON text with stack trace
 ```
 
+### Logs Package Integration
+
+This package interoperates with the [github.com/yanun0323/logs](https://github.com/yanun0323/logs) package.
+
+```go
+logger := logs.Default()
+
+err := errors.New("database connection failed").
+    With("host", "localhost").
+    With("port", 5432).
+
+logger.WithError(err).Error("Operation error")
+```
+
+When using with the `logs` package, errors created by this package can be directly passed to log functions and will automatically extract structured fields and stack traces.
+
 ## Examples
 
 ### Basic Usage
@@ -144,6 +161,28 @@ err3 := dbTemplate.Wrap(originalErr, "database operation failed")
 err := errors.New("process failed").With("pid", 1234)
 fmt.Printf("%#v\n", err)
 // Outputs structured JSON with message, fields, and stack trace
+```
+
+### Logs Package Integration
+
+```go
+import (
+    "github.com/yanun0323/errors"
+    "github.com/yanun0323/logs"
+)
+
+// Create an error with structured fields
+err := errors.New("database connection failed").
+    With("host", "localhost").
+    With("port", 5432).
+    With("timeout", "30s")
+
+// Pass directly to logs package
+logs.Error("Operation failed", err)
+// The logs package will automatically extract:
+// - Error message
+// - Structured attributes (host, port, timeout)
+// - Stack trace information
 ```
 
 ### Output Formats
