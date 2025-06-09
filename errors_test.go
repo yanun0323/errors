@@ -579,3 +579,45 @@ func checkTime() error {
 
 	return nil
 }
+
+func nilError() error {
+	return nil
+}
+
+func TestNil(t *testing.T) {
+	err := nilError()
+
+	if err != nil {
+		t.Fatal("nilError should be nil")
+	}
+
+	if Wrap(err, "hello") != nil {
+		t.Fatal("nilError should be nil")
+	}
+
+	if Wrapf(err, "hello %s", "world") != nil {
+		t.Fatal("nilError should be nil")
+	}
+
+	if Errorf("hello %w", err) != nil {
+		t.Fatal("nilError should be nil")
+	}
+
+	if Errorf("hello %s", "world") == nil {
+		t.Fatal("nilError should not be nil")
+	}
+
+	{
+		var err error
+		if Errorf("hello %w", err) != nil {
+			t.Fatal("nilError should be nil")
+		}
+	}
+
+	{
+		var err any
+		if Errorf("hello %w", err) != nil {
+			t.Fatal("nilError should be nil")
+		}
+	}
+}

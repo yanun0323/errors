@@ -64,6 +64,24 @@ errors.Wrap(err error, args ...any) Error
 errors.Wrapf(err error, format string, args ...any) Error
 ```
 
+### Template
+
+Create error templates with predefined attributes for reuse:
+
+```go
+errors.NewTemplate(args ...any) Template
+```
+
+#### Template Methods
+
+```go
+template.With(args ...any) Template             // Add more attributes (chainable)
+template.New(text string) Error                 // Create error with template attributes
+template.Wrap(err error, args ...any) Error     // Wrap error with template attributes
+template.Wrapf(err error, format string, args ...any) Error  // Wrap error with formatted message
+template.Errorf(format string, args ...any) Error           // Create formatted error
+```
+
 ### Error Methods
 
 ```go
@@ -103,6 +121,21 @@ err := errors.New("validation failed").
 ```go
 original := errors.New("network timeout")
 wrapped := errors.Errorf("failed to fetch user: %w", original)
+```
+
+### Template Usage
+
+```go
+// Create a template with common attributes
+template := errors.NewTemplate("service", "user-service", "version", "1.0.0")
+
+// Add more attributes to the template
+dbTemplate := template.With("component", "database", "host", "localhost")
+
+// Create errors using the template
+err1 := dbTemplate.New("connection failed")
+err2 := dbTemplate.Errorf("query timeout after %d seconds", 30)
+err3 := dbTemplate.Wrap(originalErr, "database operation failed")
 ```
 
 ### JSON Output

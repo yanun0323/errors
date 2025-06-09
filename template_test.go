@@ -198,3 +198,45 @@ func TestTemplateErrorWrap(t *testing.T) {
 		t.Errorf("Expected colorized output '%s', but got '%s'", expected, f)
 	}
 }
+
+func TestTemplateNil(t *testing.T) {
+	temp := NewTemplate(
+		"k1", "v1",
+		"k2", 2,
+	)
+
+	err := nilError()
+
+	if temp.Wrap(err, "hello") != nil {
+		t.Fatal("nilError should be nil")
+	}
+
+	if temp.Wrapf(err, "hello %s", "world") != nil {
+		t.Fatal("nilError should be nil")
+	}
+
+	if temp.Errorf("hello %w", err) != nil {
+		t.Fatal("nilError should be nil")
+	}
+
+	{
+		var err error
+		if temp.Errorf("hello %w", err) != nil {
+			t.Fatal("nilError should be nil")
+		}
+	}
+
+	{
+		var err any
+		if temp.Errorf("hello %w", err) != nil {
+			t.Fatal("nilError should be nil")
+		}
+	}
+
+	{
+		var err any = 123
+		if temp.Errorf("hello %w", err) != nil {
+			t.Fatal("nilError should be nil")
+		}
+	}
+}

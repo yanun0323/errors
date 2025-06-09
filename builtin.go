@@ -111,6 +111,8 @@ func errorf(template Template, format string, args ...any) Error {
 			} else {
 				return wrap(err, fmt.Sprintf(format, args...), 2, true, template)
 			}
+		} else {
+			return nil
 		}
 	}
 
