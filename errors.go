@@ -3,6 +3,8 @@ package errors
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -360,7 +362,11 @@ func canSkip(f runtime.Frame) bool {
 		return true
 	}
 
-	if strings.Contains(f.File, "/src/runtime/") {
+	if strings.Contains(f.File, string(os.PathSeparator)+filepath.Join("src", "runtime")) {
+		return true
+	}
+
+	if strings.Contains(f.File, string(os.PathSeparator)+filepath.Join("go", "src")) {
 		return true
 	}
 
