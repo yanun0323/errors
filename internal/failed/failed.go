@@ -24,6 +24,11 @@ func (Failed) ErrorWithWrap() error {
 	return errors.Wrap(ErrFailed)
 }
 
+func (f Failed) ErrorDelegate() error {
+	return f.ErrorWithWrap()
+}
+
 func (f Failed) ErrorWithFormatWrap() error {
-	return errors.Errorf("wrap: %w", f.ErrorWithWrap())
+	// return errors.Wrap(f.ErrorDelegate(), "wrap")
+	return errors.Errorf("wrap: %w", f.ErrorDelegate())
 }

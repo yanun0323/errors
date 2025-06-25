@@ -213,9 +213,7 @@ func (e *errorStack) formatJson() string {
 		return _emptyJSONString
 	}
 
-	data := dataPool.Get().(map[string]any)
-	defer dataPool.Put(data)
-
+	data := make(map[string]any, 4)
 	data["error"] = e.message
 	data["field"] = e.attr
 
