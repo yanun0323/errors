@@ -2,8 +2,8 @@
 
 A lightweight Go errors package with stack tracing and structured fields.
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/yanun0323/logs.svg)](https://pkg.go.dev/github.com/yanun0323/logs)
-[![Go Report Card](https://goreportcard.com/badge/github.com/yanun0323/logs)](https://goreportcard.com/report/github.com/yanun0323/logs)
+[![Go Reference](https://pkg.go.dev/badge/github.com/yanun0323/errors.svg)](https://pkg.go.dev/github.com/yanun0323/errors)
+[![Go Report Card](https://goreportcard.com/badge/github.com/yanun0323/errors)](https://goreportcard.com/report/github.com/yanun0323/errors)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.21-blue)](https://golang.org/dl/)
 
