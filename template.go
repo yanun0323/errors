@@ -71,3 +71,10 @@ func (t Template) Attrs(lastCaller frame) []attr {
 
 	return attrs
 }
+
+// Clone creates a new Template with the same attributes.
+func (t Template) Clone() Template {
+	return Template{
+		attr: slices.Clone(t.attr),
+	}
+}
