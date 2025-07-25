@@ -49,8 +49,8 @@ errors.FormatJson(err)                      // JSON text with stack trace
 errors.FormatColorized(err)                 // Colorized text with stack trace
 
 fmt.Printf("%s\n", err)                     // Basic message
-fmt.Printf("%v\n", err)                     // Text with stack trace
-fmt.Printf("%+v\n", err)                    // Colorized text with stack trace
+fmt.Printf("%v\n", err)                     // Formatted text with stack trace
+fmt.Printf("%+v\n", err)                    // Formatted & colorized text with stack trace
 fmt.Printf("%#v\n", err)                    // JSON text with stack trace
 ```
 
@@ -114,8 +114,10 @@ This package interoperates with the [github.com/yanun0323/logs](https://github.c
 logger := logs.Default()
 
 err := errors.New("database connection failed").
-    With("host", "localhost").
-    With("port", 5432).
+    With(
+        "host", "localhost",
+        "port", 5432,
+    )
 
 logger.WithError(err).Error("Operation error")
 ```
@@ -128,9 +130,11 @@ When using with the `logs` package, errors created by this package can be direct
 
 ```go
 err := errors.New("validation failed").
-    With("field", "email").
-    With("value", "invalid@").
-    With("rule", "email_format")
+    With(
+        "field", "email",
+        "value", "invalid@",
+        "rule", "email_format",
+    )
 ```
 
 ### Error Wrapping
@@ -144,15 +148,15 @@ wrapped := errors.Errorf("failed to fetch user: %w", original)
 
 ```go
 // Create a template with common attributes
-template := errors.NewTemplate("service", "user-service", "version", "1.0.0")
+errTmp := errors.NewTemplate("service", "user-service", "version", "1.0.0")
 
 // Add more attributes to the template
-dbTemplate := template.With("component", "database", "host", "localhost")
+errTmpDB := errTmp.With("component", "database", "host", "localhost")
 
 // Create errors using the template
-err1 := dbTemplate.New("connection failed")
-err2 := dbTemplate.Errorf("query timeout after %d seconds", 30)
-err3 := dbTemplate.Wrap(originalErr, "database operation failed")
+err1 := errTmpDB.New("connection failed")
+err2 := errTmpDB.Errorf("query timeout after %d seconds", 30)
+err3 := errTmpDB.Wrap(originalErr, "database operation failed")
 ```
 
 ### JSON Output
@@ -173,9 +177,11 @@ import (
 
 // Create an error with structured fields
 err := errors.New("database connection failed").
-    With("host", "localhost").
-    With("port", 5432).
-    With("timeout", "30s")
+    With(
+        "host", "localhost",
+        "port", 5432,
+        "timeout", "30s",
+    )
 
 // Pass directly to logs package
 logs.Error("Operation failed", err)
