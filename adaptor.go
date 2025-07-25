@@ -12,7 +12,3 @@ type Error interface {
 type unwrap interface {
 	Unwrap() error
 }
-
-type unwraps interface {
-	Unwraps() []error
-}
