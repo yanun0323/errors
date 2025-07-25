@@ -2,6 +2,11 @@
 
 A lightweight Go errors package with stack tracing and structured fields.
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/yanun0323/logs.svg)](https://pkg.go.dev/github.com/yanun0323/logs)
+[![Go Report Card](https://goreportcard.com/badge/github.com/yanun0323/logs)](https://goreportcard.com/report/github.com/yanun0323/logs)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.21-blue)](https://golang.org/dl/)
+
 ## Features
 
 - ✅ **Standard library compatible**: Drop-in replacement for `errors` package
@@ -22,7 +27,7 @@ go get github.com/yanun0323/errors
 
 ## Requirements
 
-- Go 1.18+
+- Go 1.21+
 
 ## Quick Start
 
@@ -31,8 +36,10 @@ import "github.com/yanun0323/errors"
 
 // Create error with fields
 err := errors.New("connection failed").
-    With("host", "localhost").
-    With("port", 5432)
+    With(
+        "host", "localhost",
+        "port", 5432,
+    )
 
 // Error wrapping
 wrapped := errors.Errorf("database error: %w", err)
@@ -52,6 +59,19 @@ fmt.Printf("%s\n", err)                     // Basic message
 fmt.Printf("%v\n", err)                     // Formatted text with stack trace
 fmt.Printf("%+v\n", err)                    // Formatted & colorized text with stack trace
 fmt.Printf("%#v\n", err)                    // JSON text with stack trace
+
+// Error Template
+errTmp := errors.NewTemplate("service", "user-service")
+errTmpDB := errTmp.With("component", "database")
+err1 := errTmpDB.New("connection established")
+err2 := errTmpDB.Errorf("query timeout after %d seconds", 30)
+err3 := errTmpDB.Wrapf(originalErr, "database operation %d times", 3)
+
+// Logs Package Integration
+import "github.com/yanun0323/logs"
+logs.WithError(err1).Error("connection established")
+logs.WithError(err2).Error("query timeout")
+logs.WithError(err3).Error("database operation")
 ```
 
 ## API
