@@ -119,6 +119,67 @@ func errorf(template Template, format string, args ...any) Error {
 	return newError(fmt.Sprintf(format, args...), 2, template)
 }
 
+func replaceFormatError(format string, args ...any) string {
+	var (
+		buf = []byte{}
+		p   = 0
+	)
+
+	b := stringBuilderPool.Get().(*strings.Builder)
+	defer stringBuilderPool.Put(b)
+	b.Reset()
+	b.Grow(len(format))
+
+	for i, char := range format {
+		if p > len(args) {
+			_, _ = b.WriteRune(char)
+			continue
+		}
+
+		switch char {
+		case '%':
+			if len(buf) == 1 && buf[0] == '%' {
+				_ = b.WriteByte('%')
+				_ = b.WriteByte('%')
+				buf = []byte{}
+				continue
+			}
+
+			if len(buf) != 0 {
+				_, _ = b.Write(buf)
+				p++
+			}
+
+			buf = []byte{}
+			buf = append(buf, format[i])
+		default:
+			if len(buf) == 0 {
+				_, _ = b.WriteRune(char)
+				continue
+			}
+
+			buf = append(buf, format[i])
+		}
+
+		if len(buf) > 3 {
+			continue
+		}
+
+		switch string(buf) {
+		case "%v", "%+v", "%#v", "%+#v", "%#+v":
+			if _, ok := args[p].(Error); ok {
+				buf = []byte{'%', 's'}
+			}
+		}
+	}
+
+	if len(buf) != 0 {
+		_, _ = b.Write(buf)
+	}
+
+	return b.String()
+}
+
 func newError(text string, ignoreCallStackCount int, tp ...Template) Error {
 	stack := getStack(ignoreCallStackCount)
 	lastCaller := frame{}
