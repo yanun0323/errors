@@ -29,6 +29,24 @@ func (t Template) With(args ...any) Template {
 	}
 }
 
+// WithMap creates a new Template by appending additional attributes to the existing ones.
+// It returns a new Template instance without modifying the original one.
+func (t Template) WithMap(m map[string]any) Template {
+	attrs := make([]attr, 0, len(t.attr)+len(m))
+	attrs = append(attrs, t.attr...)
+	for k, v := range m {
+		attrs = append(attrs, attr{
+			Function: "",
+			Key:      k,
+			Value:    v,
+		})
+	}
+
+	return Template{
+		attr: attrs,
+	}
+}
+
 // New creates a new Error with the given text message and the template's attributes.
 func (t Template) New(text string) Error {
 	return newError(text, 1, t)
