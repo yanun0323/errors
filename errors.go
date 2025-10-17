@@ -112,6 +112,30 @@ func (e *errorStack) With(args ...any) Error {
 	}
 }
 
+func (e *errorStack) WithMap(m map[string]any) Error {
+	if e == nil {
+		return nil
+	}
+
+	attrs := make([]attr, 0, len(e.attr)+len(m))
+	attrs = append(attrs, e.attr...)
+	for k, v := range m {
+		attrs = append(attrs, attr{
+			Function: e.lastCaller.Function,
+			Key:      k,
+			Value:    v,
+		})
+	}
+
+	return &errorStack{
+		message:    e.message,
+		cause:      e.cause,
+		lastCaller: e.lastCaller,
+		stack:      e.stack,
+		attr:       attrs,
+	}
+}
+
 // String returns basic string format
 func (e *errorStack) String() string {
 	return e.Error()

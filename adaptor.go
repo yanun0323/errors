@@ -7,6 +7,7 @@ type Error interface {
 	error
 
 	With(args ...any) Error
+	WithMap(map[string]any) Error
 }
 
 type unwrap interface {
